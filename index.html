@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackpine - Information Theory Based Investment</title>
+    <style>
+        body { margin: 0; padding: 0; }
+        #loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+            color: #4a8a9d;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"><div id="loading">Loading Blackpine...</div></div>
+    
+    <!-- Load libraries - using jsdelivr for Recharts -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Wait for all libraries to load -->
+    <script>
+        var checkCount = 0;
+        var maxChecks = 50; // Try for 5 seconds max
+        
+        function checkLibrariesAndRun() {
+            checkCount++;
+            
+            if (typeof React !== 'undefined' && 
+                typeof ReactDOM !== 'undefined' && 
+                typeof Recharts !== 'undefined' && 
+                typeof Babel !== 'undefined') {
+                
+                // All loaded! Add and transform the component script
+                var script = document.getElementById('component-code');
+                if (script) {
+                    script.type = 'text/babel';
+                    Babel.transformScriptTags();
+                }
+            } else if (checkCount < maxChecks) {
+                // Not ready yet, try again
+                setTimeout(checkLibrariesAndRun, 100);
+            } else {
+                // Timeout - show error
+                var errorMsg = '<div style="padding: 50px; color: red; font-family: sans-serif;">';
+                errorMsg += '<h2>Error: Libraries failed to load</h2>';
+                errorMsg += '<p>Could not load required libraries. Please:</p><ul>';
+                errorMsg += '<li>Check your internet connection</li>';
+                errorMsg += '<li>Try refreshing the page</li>';
+                errorMsg += '<li>Try a different browser (Chrome recommended)</li>';
+                errorMsg += '<li>Or upload this file to GitHub Pages for best results</li>';
+                errorMsg += '</ul></div>';
+                document.getElementById('root').innerHTML = errorMsg;
+            }
+        }
+        
+        window.addEventListener('load', function() {
+            setTimeout(checkLibrariesAndRun, 500);
+        });
+    </script>
+    
+    <script id="component-code" type="text/plain">
+        const { useState, useEffect } = React;
+        const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+        
+        const TrendingUp = ({ size = 24, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+        );
+        
+        const Activity = ({ size = 24, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+        );
+        
+        const Shield = ({ size = 24, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+        );
+        
+        const Zap = ({ size = 24, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+        );
+        
+        const ChevronRight = ({ size = 24, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        );
+
+
+function BlackpineLanding() {
+  const [scrolled, setScrolled] = useState(false);
+  const [activeMetric, setActiveMetric] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Portfolio growth data from backtest with S&P 500 comparison
+  const portfolioData = [
+    { year: '2015', blackpine: 1.01, sp500: 1.01, blackpineLabel: '$1.01M', sp500Label: '$1.01M' },
+    { year: '2016', blackpine: 1.15, sp500: 1.14, blackpineLabel: '$1.15M', sp500Label: '$1.14M' },
+    { year: '2017', blackpine: 1.49, sp500: 1.38, blackpineLabel: '$1.49M', sp500Label: '$1.38M' },
+    { year: '2018', blackpine: 1.68, sp500: 1.32, blackpineLabel: '$1.68M', sp500Label: '$1.32M' },
+    { year: '2019', blackpine: 2.01, sp500: 1.74, blackpineLabel: '$2.01M', sp500Label: '$1.74M' },
+    { year: '2020', blackpine: 2.90, sp500: 2.06, blackpineLabel: '$2.90M', sp500Label: '$2.06M' },
+    { year: '2021', blackpine: 3.85, sp500: 2.65, blackpineLabel: '$3.85M', sp500Label: '$2.65M' },
+    { year: '2022', blackpine: 2.78, sp500: 2.17, blackpineLabel: '$2.78M', sp500Label: '$2.17M' },
+    { year: '2023', blackpine: 3.59, sp500: 2.74, blackpineLabel: '$3.59M', sp500Label: '$2.74M' },
+    { year: '2024', blackpine: 6.13, sp500: 3.43, blackpineLabel: '$6.13M', sp500Label: '$3.43M' },
+    { year: '2025', blackpine: 7.33, sp500: 4.05, blackpineLabel: '$7.33M', sp500Label: '$4.05M' }
+  ];
+
+  // Yearly performance comparison
+  const yearlyComparison = [
+    { year: '2016', blackpine: 13.9, sp500: 11.96, outperformance: 1.95 },
+    { year: '2017', blackpine: 29.8, sp500: 21.83, outperformance: 8.00 },
+    { year: '2018', blackpine: 13.0, sp500: -4.38, outperformance: 17.39 },
+    { year: '2019', blackpine: 19.4, sp500: 31.49, outperformance: -12.09 },
+    { year: '2020', blackpine: 44.7, sp500: 18.40, outperformance: 26.31 },
+    { year: '2021', blackpine: 32.7, sp500: 28.71, outperformance: 3.95 },
+    { year: '2022', blackpine: -27.8, sp500: -18.11, outperformance: -9.70 },
+    { year: '2023', blackpine: 29.3, sp500: 26.29, outperformance: 2.97 },
+    { year: '2024', blackpine: 70.5, sp500: 25.02, outperformance: 45.45 },
+    { year: '2025', blackpine: 19.6, sp500: 18.11, outperformance: 1.48 }
+  ];
+
+  const metrics = [
+    { label: 'Total Return', value: '713%', sublabel: 'Over 10.8 years', icon: TrendingUp },
+    { label: 'Annual Return', value: '21.39%', sublabel: '2015-2025', icon: Activity },
+    { label: 'Recent Return', value: '24.48%', sublabel: '2020-2025 Annual', icon: Shield },
+    { label: 'vs S&P 500', value: '1.81x', sublabel: 'Outperformance', icon: Zap }
+  ];
+
+  return (
+    <div className="landing-container">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        :root {
+          --pine-dark: #0a1f1f;
+          --pine-medium: #1a3d3d;
+          --ocean-deep: #0d3d56;
+          --ocean-blue: #1e5f74;
+          --sea-mist: #4a8a9d;
+          --sand-light: #d4c5a9;
+          --foam-white: #f4f1ea;
+          --accent-green: #2d5f4c;
+          --accent-gold: #b8956a;
+        }
+
+        body {
+          font-family: 'Outfit', sans-serif;
+          background: var(--pine-dark);
+          color: var(--foam-white);
+          overflow-x: hidden;
+        }
+
+        .landing-container {
+          position: relative;
+        }
+
+        /* Organic background pattern */
+        .landing-container::before {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 20% 80%, rgba(29, 95, 116, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(45, 95, 76, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(26, 61, 61, 0.2) 0%, transparent 40%);
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        /* Header */
+        .header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 1000;
+          padding: 1.5rem 5%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          background: ${scrolled ? 'rgba(10, 31, 31, 0.95)' : 'transparent'};
+          backdrop-filter: ${scrolled ? 'blur(20px)' : 'none'};
+          border-bottom: ${scrolled ? '1px solid rgba(74, 138, 157, 0.2)' : 'none'};
+        }
+
+        .logo {
+          font-family: 'Crimson Pro', serif;
+          font-size: 2rem;
+          font-weight: 600;
+          letter-spacing: -0.5px;
+          color: var(--foam-white);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .logo-accent {
+          color: var(--sea-mist);
+        }
+
+        .nav {
+          display: flex;
+          gap: 2.5rem;
+          align-items: center;
+        }
+
+        .nav-link {
+          color: var(--sand-light);
+          text-decoration: none;
+          font-weight: 400;
+          font-size: 0.95rem;
+          transition: color 0.3s ease;
+          position: relative;
+        }
+
+        .nav-link:hover {
+          color: var(--foam-white);
+        }
+
+        .nav-link::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 0;
+          height: 1px;
+          background: var(--sea-mist);
+          transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+          width: 100%;
+        }
+
+        .cta-button {
+          background: linear-gradient(135deg, var(--ocean-blue), var(--sea-mist));
+          color: var(--foam-white);
+          padding: 0.75rem 1.75rem;
+          border-radius: 50px;
+          border: none;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 0.95rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .cta-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(74, 138, 157, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+          position: relative;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          padding: 8rem 5% 4rem;
+          z-index: 1;
+        }
+
+        /* Methodology Section */
+        .methodology-section {
+          padding: 5rem 5% 6rem;
+          position: relative;
+          z-index: 1;
+          background: linear-gradient(180deg, transparent 0%, rgba(13, 61, 86, 0.15) 100%);
+        }
+
+        .methodology-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          text-align: center;
+        }
+
+        .methodology-badge {
+          display: inline-block;
+          background: rgba(74, 138, 157, 0.2);
+          border: 1px solid var(--sea-mist);
+          color: var(--sea-mist);
+          padding: 0.5rem 1.5rem;
+          border-radius: 50px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          margin-bottom: 1.5rem;
+          letter-spacing: 0.5px;
+        }
+
+        .methodology-title {
+          font-family: 'Crimson Pro', serif;
+          font-size: 2.8rem;
+          font-weight: 600;
+          margin-bottom: 1.5rem;
+          color: var(--foam-white);
+          line-height: 1.2;
+        }
+
+        .methodology-text {
+          font-size: 1.15rem;
+          color: var(--sand-light);
+          line-height: 1.8;
+          margin-bottom: 3rem;
+          max-width: 950px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .methodology-highlights {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2rem;
+          margin-top: 3rem;
+        }
+
+        .highlight-item {
+          background: rgba(26, 61, 61, 0.3);
+          border: 1px solid rgba(74, 138, 157, 0.3);
+          border-radius: 16px;
+          padding: 2.5rem 2rem;
+          text-align: left;
+          transition: all 0.3s ease;
+          display: flex;
+          gap: 1.25rem;
+          align-items: start;
+        }
+
+        .highlight-item:hover {
+          background: rgba(26, 61, 61, 0.5);
+          border-color: var(--sea-mist);
+          transform: translateY(-4px);
+        }
+
+        .highlight-icon {
+          font-size: 2rem;
+          color: var(--sea-mist);
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+
+        .highlight-content {
+          flex: 1;
+        }
+
+        .highlight-title {
+          font-size: 1.3rem;
+          font-weight: 600;
+          color: var(--foam-white);
+          margin-bottom: 0.75rem;
+        }
+
+        .highlight-desc {
+          font-size: 1.05rem;
+          color: var(--sand-light);
+          line-height: 1.6;
+        }
+
+        .hero-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 5rem;
+          align-items: center;
+        }
+
+        .hero-text h1 {
+          font-family: 'Crimson Pro', serif;
+          font-size: 5rem;
+          font-weight: 300;
+          line-height: 1.1;
+          margin-bottom: 1.5rem;
+          letter-spacing: -2px;
+          animation: fadeInUp 1s ease-out;
+        }
+
+        .hero-text .highlight {
+          font-weight: 700;
+          color: var(--sea-mist);
+          display: block;
+        }
+
+        .hero-text .subtitle {
+          font-family: 'Crimson Pro', serif;
+          font-size: 1.5rem;
+          font-weight: 300;
+          color: var(--sand-light);
+          margin-bottom: 2rem;
+          line-height: 1.6;
+          animation: fadeInUp 1s ease-out 0.2s;
+          animation-fill-mode: both;
+        }
+
+        .hero-text .description {
+          font-size: 1.1rem;
+          color: var(--sand-light);
+          line-height: 1.8;
+          margin-bottom: 2.5rem;
+          animation: fadeInUp 1s ease-out 0.4s;
+          animation-fill-mode: both;
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .hero-stats {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1.5rem;
+          margin-top: 3rem;
+        }
+
+        .stat-box {
+          background: rgba(26, 61, 61, 0.4);
+          border: 1px solid rgba(74, 138, 157, 0.3);
+          border-radius: 16px;
+          padding: 1.5rem;
+          backdrop-filter: blur(10px);
+          transition: all 0.3s ease;
+        }
+
+        .stat-box:hover {
+          background: rgba(26, 61, 61, 0.6);
+          border-color: var(--sea-mist);
+          transform: translateY(-4px);
+        }
+
+        .stat-value {
+          font-size: 2.5rem;
+          font-weight: 700;
+          color: var(--sea-mist);
+          margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+          font-size: 0.9rem;
+          color: var(--sand-light);
+        }
+
+        /* Chart Card */
+        .chart-card {
+          background: rgba(13, 61, 86, 0.3);
+          border: 1px solid rgba(74, 138, 157, 0.3);
+          border-radius: 24px;
+          padding: 2.5rem;
+          backdrop-filter: blur(10px);
+          animation: fadeInRight 1s ease-out 0.6s;
+          animation-fill-mode: both;
+        }
+
+        @keyframes fadeInRight {
+          from {
+            opacity: 0;
+            transform: translateX(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        .chart-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+          color: var(--foam-white);
+        }
+
+        .chart-subtitle {
+          font-size: 0.95rem;
+          color: var(--sand-light);
+          margin-bottom: 2rem;
+        }
+
+        /* Performance Section */
+        .performance-section {
+          position: relative;
+          padding: 6rem 5%;
+          z-index: 1;
+          background: linear-gradient(180deg, transparent 0%, rgba(26, 61, 61, 0.2) 100%);
+        }
+
+        .section-header {
+          text-align: center;
+          max-width: 800px;
+          margin: 0 auto 4rem;
+        }
+
+        .section-title {
+          font-family: 'Crimson Pro', serif;
+          font-size: 3.5rem;
+          font-weight: 600;
+          margin-bottom: 1rem;
+          color: var(--foam-white);
+        }
+
+        .section-subtitle {
+          font-size: 1.2rem;
+          color: var(--sand-light);
+          line-height: 1.6;
+        }
+
+        .metrics-grid {
+          max-width: 1400px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 2rem;
+        }
+
+        .metric-card {
+          background: rgba(13, 61, 86, 0.3);
+          border: 1px solid rgba(74, 138, 157, 0.3);
+          border-radius: 20px;
+          padding: 2.5rem 2rem;
+          text-align: center;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .metric-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(74, 138, 157, 0.1), transparent);
+          opacity: 0;
+          transition: opacity 0.4s ease;
+        }
+
+        .metric-card:hover {
+          transform: translateY(-8px);
+          border-color: var(--sea-mist);
+          background: rgba(13, 61, 86, 0.5);
+        }
+
+        .metric-card:hover::before {
+          opacity: 1;
+        }
+
+        .metric-icon {
+          width: 48px;
+          height: 48px;
+          margin: 0 auto 1.5rem;
+          color: var(--sea-mist);
+        }
+
+        .metric-value {
+          font-size: 3rem;
+          font-weight: 700;
+          color: var(--foam-white);
+          margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--sand-light);
+          margin-bottom: 0.25rem;
+        }
+
+        .metric-sublabel {
+          font-size: 0.85rem;
+          color: var(--sea-mist);
+        }
+
+        /* Comparison Table Section */
+        .comparison-section {
+          padding: 6rem 5%;
+          position: relative;
+          z-index: 1;
+        }
+
+        .comparison-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 3rem;
+          align-items: start;
+        }
+
+        .comparison-table-wrapper {
+          background: rgba(13, 61, 86, 0.3);
+          border: 1px solid rgba(74, 138, 157, 0.3);
+          border-radius: 20px;
+          padding: 2rem;
+          backdrop-filter: blur(10px);
+          overflow-x: auto;
+        }
+
+        .comparison-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .comparison-table thead th {
+          background: linear-gradient(135deg, rgba(74, 138, 157, 0.3), rgba(45, 95, 76, 0.3));
+          color: var(--foam-white);
+          padding: 1rem;
+          text-align: left;
+          font-weight: 600;
+          font-size: 0.95rem;
+          border-bottom: 2px solid var(--sea-mist);
+        }
+
+        .comparison-table tbody td,
+        .comparison-table tfoot td {
+          padding: 0.9rem 1rem;
+          border-bottom: 1px solid rgba(74, 138, 157, 0.2);
+          font-size: 1rem;
+        }
+
+        .comparison-table tbody tr:hover {
+          background: rgba(26, 61, 61, 0.3);
+        }
+
+        .comparison-table tfoot tr.total-row {
+          background: rgba(74, 138, 157, 0.2);
+          font-size: 1.1rem;
+        }
+
+        .comparison-table tfoot tr.total-row td {
+          border-bottom: none;
+          padding-top: 1.2rem;
+        }
+
+        .year-cell {
+          color: var(--sand-light);
+          font-weight: 500;
+        }
+
+        .positive {
+          color: #5dd39e;
+          font-weight: 600;
+        }
+
+        .negative {
+          color: #ff6b6b;
+          font-weight: 600;
+        }
+
+        .comparison-insights {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .insight-box {
+          background: rgba(26, 61, 61, 0.4);
+          border: 1px solid rgba(74, 138, 157, 0.3);
+          border-radius: 16px;
+          padding: 2rem;
+          text-align: center;
+          transition: all 0.3s ease;
+        }
+
+        .insight-box:hover {
+          background: rgba(26, 61, 61, 0.6);
+          border-color: var(--sea-mist);
+          transform: translateY(-4px);
+        }
+
+        .insight-number {
+          font-size: 2.5rem;
+          font-weight: 700;
+          color: var(--sea-mist);
+          margin-bottom: 0.5rem;
+        }
+
+        .insight-text {
+          font-size: 1rem;
+          color: var(--sand-light);
+          line-height: 1.4;
+        }
+
+        /* Strategy Section */
+        .strategy-section {
+          padding: 6rem 5%;
+          position: relative;
+          z-index: 1;
+        }
+
+        .strategy-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 5rem;
+          align-items: center;
+        }
+
+        .strategy-features {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
+        .feature-card {
+          background: rgba(26, 61, 61, 0.4);
+          border-left: 3px solid var(--sea-mist);
+          border-radius: 12px;
+          padding: 2rem;
+          transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+          background: rgba(26, 61, 61, 0.6);
+          transform: translateX(10px);
+        }
+
+        .feature-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 0.75rem;
+          color: var(--foam-white);
+        }
+
+        .feature-description {
+          font-size: 1rem;
+          color: var(--sand-light);
+          line-height: 1.7;
+        }
+
+        /* Algorithm Section */
+        .algorithm-section {
+          padding: 6rem 5%;
+          background: linear-gradient(180deg, rgba(26, 61, 61, 0.2) 0%, transparent 100%);
+          position: relative;
+          z-index: 1;
+        }
+
+        .algorithm-grid {
+          max-width: 1400px;
+          margin: 3rem auto 0;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 2rem;
+        }
+
+        .algorithm-card {
+          background: rgba(13, 61, 86, 0.3);
+          border: 1px solid rgba(74, 138, 157, 0.3);
+          border-radius: 20px;
+          padding: 2.5rem;
+          transition: all 0.3s ease;
+        }
+
+        .algorithm-card:hover {
+          border-color: var(--sea-mist);
+          transform: translateY(-5px);
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .algorithm-number {
+          font-size: 3rem;
+          font-weight: 700;
+          color: var(--sea-mist);
+          opacity: 0.3;
+          margin-bottom: 1rem;
+        }
+
+        .algorithm-title {
+          font-size: 1.3rem;
+          font-weight: 600;
+          margin-bottom: 1rem;
+          color: var(--foam-white);
+        }
+
+        .algorithm-text {
+          color: var(--sand-light);
+          line-height: 1.7;
+        }
+
+        /* CTA Section */
+        .cta-section {
+          padding: 8rem 5%;
+          position: relative;
+          z-index: 1;
+        }
+
+        .cta-container {
+          max-width: 900px;
+          margin: 0 auto;
+          text-align: center;
+          background: linear-gradient(135deg, rgba(13, 61, 86, 0.5), rgba(26, 61, 61, 0.5));
+          border: 1px solid rgba(74, 138, 157, 0.4);
+          border-radius: 32px;
+          padding: 5rem 3rem;
+          backdrop-filter: blur(20px);
+        }
+
+        .cta-title {
+          font-family: 'Crimson Pro', serif;
+          font-size: 3rem;
+          font-weight: 600;
+          margin-bottom: 1.5rem;
+          color: var(--foam-white);
+        }
+
+        .cta-text {
+          font-size: 1.2rem;
+          color: var(--sand-light);
+          margin-bottom: 3rem;
+          line-height: 1.7;
+        }
+
+        .cta-buttons {
+          display: flex;
+          gap: 1.5rem;
+          justify-content: center;
+        }
+
+        .primary-button {
+          background: linear-gradient(135deg, var(--ocean-blue), var(--sea-mist));
+          color: var(--foam-white);
+          padding: 1.2rem 3rem;
+          border-radius: 50px;
+          border: none;
+          font-weight: 600;
+          font-size: 1.1rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .primary-button:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 10px 30px rgba(74, 138, 157, 0.4);
+        }
+
+        .secondary-button {
+          background: transparent;
+          color: var(--foam-white);
+          padding: 1.2rem 3rem;
+          border-radius: 50px;
+          border: 2px solid var(--sea-mist);
+          font-weight: 600;
+          font-size: 1.1rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .secondary-button:hover {
+          background: rgba(74, 138, 157, 0.1);
+          border-color: var(--foam-white);
+        }
+
+        /* Footer */
+        .footer {
+          padding: 3rem 5%;
+          border-top: 1px solid rgba(74, 138, 157, 0.2);
+          position: relative;
+          z-index: 1;
+        }
+
+        .footer-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .footer-text {
+          color: var(--sand-light);
+          font-size: 0.9rem;
+        }
+
+        .footer-text strong {
+          color: var(--foam-white);
+          font-weight: 600;
+        }
+
+        .footer-links {
+          display: flex;
+          gap: 2rem;
+        }
+
+        .footer-link {
+          color: var(--sand-light);
+          text-decoration: none;
+          font-size: 0.9rem;
+          transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+          color: var(--foam-white);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+          .hero-content,
+          .strategy-content {
+            grid-template-columns: 1fr;
+            gap: 3rem;
+          }
+
+          .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .algorithm-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .methodology-highlights {
+            grid-template-columns: 1fr;
+          }
+
+          .hero-text h1 {
+            font-size: 4rem;
+          }
+
+          .comparison-container {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .nav {
+            display: none;
+          }
+
+          .hero-text h1 {
+            font-size: 3rem;
+          }
+
+          .methodology-title {
+            font-size: 2rem;
+          }
+
+          .methodology-text {
+            font-size: 1rem;
+          }
+
+          .highlight-title {
+            font-size: 1.1rem;
+          }
+
+          .highlight-desc {
+            font-size: 0.95rem;
+          }
+
+          .highlight-item {
+            padding: 1.5rem 1.25rem;
+          }
+
+          .metrics-grid,
+          .algorithm-grid,
+          .hero-stats,
+          .methodology-highlights {
+            grid-template-columns: 1fr;
+          }
+
+          .cta-buttons {
+            flex-direction: column;
+          }
+
+          .comparison-table-wrapper {
+            overflow-x: scroll;
+          }
+
+          .comparison-table {
+            font-size: 0.85rem;
+          }
+
+          .comparison-table thead th,
+          .comparison-table tbody td,
+          .comparison-table tfoot td {
+            padding: 0.6rem 0.5rem;
+          }
+        }
+      `}</style>
+
+      {/* Header */}
+      <header className="header">
+        <div className="logo">
+          Black<span className="logo-accent">pine</span>
+        </div>
+        <nav className="nav">
+          <a href="#performance" className="nav-link">Performance</a>
+          <a href="#strategy" className="nav-link">Strategy</a>
+          <a href="#algorithm" className="nav-link">Algorithm</a>
+          <a href="#contact" className="nav-link">Contact</a>
+          <button className="cta-button">
+            Get Started
+            <ChevronRight size={18} />
+          </button>
+        </nav>
+      </header>
+
+      {/* Hero Section */}
+      <section className="hero">
+        <div className="hero-content">
+          <div className="hero-text">
+            <h1>
+              Information Theory Based Investment.
+              <span className="highlight">Engineered for Growth.</span>
+            </h1>
+            <p className="subtitle">
+              Where renormalized measure theory meets systematic portfolio optimization
+            </p>
+            <p className="description">
+              Blackpine combines information theory with financial engineering to deliver consistent, risk-adjusted returns. Our algorithms apply renormalized measure theory to systematically optimize portfolio weights—transforming market noise into systematic outperformance.
+            </p>
+            
+            <div className="hero-stats">
+              <div className="stat-box">
+                <div className="stat-value">$7.33M</div>
+                <div className="stat-label">From $1M in 10.8 years</div>
+              </div>
+              <div className="stat-box">
+                <div className="stat-value">1.81x</div>
+                <div className="stat-label">S&P 500 outperformance</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="chart-card">
+            <h3 className="chart-title">Portfolio Growth: 2015-2025</h3>
+            <p className="chart-subtitle">Backtested performance on $1M initial capital vs S&P 500</p>
+            <ResponsiveContainer width="100%" height={350}>
+              <AreaChart data={portfolioData}>
+                <defs>
+                  <linearGradient id="blackpineGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#4a8a9d" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#4a8a9d" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="sp500Gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#b8956a" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#b8956a" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(74, 138, 157, 0.1)" />
+                <XAxis 
+                  dataKey="year" 
+                  stroke="#d4c5a9"
+                  style={{ fontSize: '0.85rem' }}
+                />
+                <YAxis 
+                  stroke="#d4c5a9"
+                  style={{ fontSize: '0.85rem' }}
+                  tickFormatter={(value) => `$${value.toFixed(1)}M`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: 'rgba(13, 61, 86, 0.95)',
+                    border: '1px solid rgba(74, 138, 157, 0.4)',
+                    borderRadius: '12px',
+                    color: '#f4f1ea'
+                  }}
+                  formatter={(value, name) => {
+                    if (name === 'blackpine') {
+                      const item = portfolioData.find(d => d.blackpine === value);
+                      return [item?.blackpineLabel || value, 'Blackpine'];
+                    } else {
+                      const item = portfolioData.find(d => d.sp500 === value);
+                      return [item?.sp500Label || value, 'S&P 500'];
+                    }
+                  }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="sp500" 
+                  stroke="#b8956a" 
+                  strokeWidth={2}
+                  fill="url(#sp500Gradient)"
+                  name="sp500"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="blackpine" 
+                  stroke="#4a8a9d" 
+                  strokeWidth={3}
+                  fill="url(#blackpineGradient)"
+                  name="blackpine"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '24px', height: '3px', background: '#4a8a9d' }}></div>
+                <span style={{ fontSize: '0.9rem', color: '#d4c5a9' }}>Blackpine Strategy</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '24px', height: '2px', background: '#b8956a' }}></div>
+                <span style={{ fontSize: '0.9rem', color: '#d4c5a9' }}>S&P 500</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Methodology Section */}
+      <section className="methodology-section">
+        <div className="methodology-container">
+          <div className="methodology-badge">Rigorous Backtesting</div>
+          <h2 className="methodology-title">Zero Look-Ahead Bias. Clear Signal.</h2>
+          <p className="methodology-text">
+            Our backtest is disciplined and transparent. Each January 1st, we select the top 10 S&P 500 stocks by market capitalization. This universe stays fixed for the entire year—no cherry-picking, no look-ahead bias. We rebalance quarterly using our AI-Math hybrid algorithm, optimizing portfolio weights based solely on historical market information and information theory. Clear signal. Zero noise.
+          </p>
+          <div className="methodology-highlights">
+            <div className="highlight-item">
+              <div className="highlight-icon">✓</div>
+              <div className="highlight-content">
+                <div className="highlight-title">Annual Stock Universe</div>
+                <div className="highlight-desc">Top 10 S&P 500 by market cap, locked January 1st</div>
+              </div>
+            </div>
+            <div className="highlight-item">
+              <div className="highlight-icon">✓</div>
+              <div className="highlight-content">
+                <div className="highlight-title">Quarterly Rebalancing</div>
+                <div className="highlight-desc">Weight optimization every 63 trading days</div>
+              </div>
+            </div>
+            <div className="highlight-item">
+              <div className="highlight-icon">✓</div>
+              <div className="highlight-content">
+                <div className="highlight-title">Zero Look-Ahead</div>
+                <div className="highlight-desc">Historical data only—no hindsight bias</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Performance Metrics */}
+      <section id="performance" className="performance-section">
+        <div className="section-header">
+          <h2 className="section-title">Proven Performance</h2>
+          <p className="section-subtitle">
+            10+ years of backtested results demonstrate the power of our information-driven approach
+          </p>
+        </div>
+
+        <div className="metrics-grid">
+          {metrics.map((metric, index) => (
+            <div 
+              key={index}
+              className="metric-card"
+              onMouseEnter={() => setActiveMetric(index)}
+            >
+              <metric.icon className="metric-icon" />
+              <div className="metric-value">{metric.value}</div>
+              <div className="metric-label">{metric.label}</div>
+              <div className="metric-sublabel">{metric.sublabel}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Yearly Comparison Table */}
+      <section className="comparison-section">
+        <div className="section-header">
+          <h2 className="section-title">Year-by-Year Analysis</h2>
+          <p className="section-subtitle">
+            Direct comparison with S&P 500 benchmark performance
+          </p>
+        </div>
+
+        <div className="comparison-container">
+          <div className="comparison-table-wrapper">
+            <table className="comparison-table">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>Blackpine</th>
+                  <th>S&P 500</th>
+                  <th>Outperformance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {yearlyComparison.map((row, index) => (
+                  <tr key={index}>
+                    <td className="year-cell">{row.year}</td>
+                    <td className={row.blackpine >= 0 ? 'positive' : 'negative'}>
+                      {row.blackpine > 0 ? '+' : ''}{row.blackpine.toFixed(1)}%
+                    </td>
+                    <td className={row.sp500 >= 0 ? 'positive' : 'negative'}>
+                      {row.sp500 > 0 ? '+' : ''}{row.sp500.toFixed(1)}%
+                    </td>
+                    <td className={row.outperformance >= 0 ? 'positive' : 'negative'}>
+                      {row.outperformance > 0 ? '+' : ''}{row.outperformance.toFixed(1)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="total-row">
+                  <td className="year-cell"><strong>Cumulative</strong></td>
+                  <td className="positive"><strong>+713%</strong></td>
+                  <td className="positive"><strong>+305%</strong></td>
+                  <td className="positive"><strong>+408%</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div className="comparison-insights">
+            <div className="insight-box">
+              <div className="insight-number">9 / 10</div>
+              <div className="insight-text">Positive years</div>
+            </div>
+            <div className="insight-box">
+              <div className="insight-number">8 / 10</div>
+              <div className="insight-text">Years outperforming S&P 500</div>
+            </div>
+            <div className="insight-box">
+              <div className="insight-number">22.69%</div>
+              <div className="insight-text">Annual volatility</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Strategy Section */}
+      <section id="strategy" className="strategy-section">
+        <div className="strategy-content">
+          <div>
+            <h2 className="section-title">Systematic Excellence</h2>
+            <p className="section-subtitle">
+              Our algorithm works on any stock universe you choose. Pick 5 stocks or 50—we optimize the weights using rigorous information theory and practical market wisdom.
+            </p>
+          </div>
+
+          <div className="strategy-features">
+            <div className="feature-card">
+              <h3 className="feature-title">Renormalized Measure Theory Optimization</h3>
+              <p className="feature-description">
+                Advanced portfolio weighting using quasi-LP mean estimation and market cap blending for optimal risk-adjusted returns.
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <h3 className="feature-title">Systematic Rebalancing</h3>
+              <p className="feature-description">
+                Periodic rebalancing every 63 trading days maintains optimal portfolio structure while minimizing transaction costs.
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <h3 className="feature-title">Flexible Universe Selection</h3>
+              <p className="feature-description">
+                Our backtest uses annual S&P 500 top 10 selection as an example. In practice, you choose any stock universe that matches your investment thesis and risk appetite.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Algorithm Section */}
+      <section id="algorithm" className="algorithm-section">
+        <div className="section-header">
+          <h2 className="section-title">The Blackpine Algorithm</h2>
+          <p className="section-subtitle">
+            Information theory meets systematic optimization—on your stock universe
+          </p>
+        </div>
+
+        <div className="algorithm-grid">
+          <div className="algorithm-card">
+            <div className="algorithm-number">01</div>
+            <h3 className="algorithm-title">Data Intelligence</h3>
+            <p className="algorithm-text">
+              Multi-source data aggregation with rigorous validation, cleaning outliers and ensuring data integrity across 10+ years of market history.
+            </p>
+          </div>
+
+          <div className="algorithm-card">
+            <div className="algorithm-number">02</div>
+            <h3 className="algorithm-title">Optimization Engine</h3>
+            <p className="algorithm-text">
+              Renormalized measure theory with quasi-LP mean estimation, balancing information-theoretic principles with practical risk constraints and market cap considerations.
+            </p>
+          </div>
+
+          <div className="algorithm-card">
+            <div className="algorithm-number">03</div>
+            <h3 className="algorithm-title">Execution Precision</h3>
+            <p className="algorithm-text">
+              Systematic rebalancing with universal shares tracking, maintaining portfolio integrity with 0.06% average validation accuracy.
+            </p>
+          </div>
+
+          <div className="algorithm-card">
+            <div className="algorithm-number">04</div>
+            <h3 className="algorithm-title">Your Universe, Our Optimization</h3>
+            <p className="algorithm-text">
+              You select the stocks you believe in—any universe, any size. Our algorithm optimizes the weights. Complete transparency, complete control.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section id="contact" className="cta-section">
+        <div className="cta-container">
+          <h2 className="cta-title">Ready to Optimize Your Portfolio?</h2>
+          <p className="cta-text">
+            Choose your stock universe. Our algorithm handles the optimization. Join institutional investors who trust systematic precision over gut feeling.
+          </p>
+          <div className="cta-buttons">
+            <button className="primary-button">
+              Schedule Consultation
+              <ChevronRight size={20} />
+            </button>
+            <button className="secondary-button">
+              View Methodology
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="footer">
+        <div className="footer-content">
+          <div className="footer-text">
+            <strong>Blackpine</strong> · Information Theory Based Investment & Financial Engineering
+          </div>
+          <div className="footer-links">
+            <a href="#" className="footer-link">Privacy Policy</a>
+            <a href="#" className="footer-link">Terms of Service</a>
+            <a href="#" className="footer-link">Disclaimer</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<BlackpineLanding />);
+    </script>
+</body>
+</html>
