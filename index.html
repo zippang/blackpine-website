@@ -4,70 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blackpine - Information Theory Based Investment</title>
-    <style>
-        body { margin: 0; padding: 0; }
-        #loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: sans-serif;
-            color: #4a8a9d;
-            font-size: 1.2rem;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"><div id="loading">Loading Blackpine...</div></div>
     
-    <!-- Load libraries - using jsdelivr for Recharts -->
+    <!-- Load all libraries in head -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.js"></script>
+    <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Wait for all libraries to load -->
-    <script>
-        var checkCount = 0;
-        var maxChecks = 50; // Try for 5 seconds max
-        
-        function checkLibrariesAndRun() {
-            checkCount++;
-            
-            if (typeof React !== 'undefined' && 
-                typeof ReactDOM !== 'undefined' && 
-                typeof Recharts !== 'undefined' && 
-                typeof Babel !== 'undefined') {
-                
-                // All loaded! Add and transform the component script
-                var script = document.getElementById('component-code');
-                if (script) {
-                    script.type = 'text/babel';
-                    Babel.transformScriptTags();
-                }
-            } else if (checkCount < maxChecks) {
-                // Not ready yet, try again
-                setTimeout(checkLibrariesAndRun, 100);
-            } else {
-                // Timeout - show error
-                var errorMsg = '<div style="padding: 50px; color: red; font-family: sans-serif;">';
-                errorMsg += '<h2>Error: Libraries failed to load</h2>';
-                errorMsg += '<p>Could not load required libraries. Please:</p><ul>';
-                errorMsg += '<li>Check your internet connection</li>';
-                errorMsg += '<li>Try refreshing the page</li>';
-                errorMsg += '<li>Try a different browser (Chrome recommended)</li>';
-                errorMsg += '<li>Or upload this file to GitHub Pages for best results</li>';
-                errorMsg += '</ul></div>';
-                document.getElementById('root').innerHTML = errorMsg;
-            }
-        }
-        
-        window.addEventListener('load', function() {
-            setTimeout(checkLibrariesAndRun, 500);
-        });
-    </script>
-    
-    <script id="component-code" type="text/plain">
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Component code - Babel will transform this automatically -->
+    <script type="text/babel">
         const { useState, useEffect } = React;
         const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
         
